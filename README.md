@@ -2,6 +2,12 @@
 
 A Python library to add subtitles to videos using FFmpeg and OpenAI Whisper API.
 
+
+
+https://github.com/user-attachments/assets/7c2d0a6a-7d75-4837-b141-097104a0cb5e
+
+
+
 ## Features
 
 - Extract audio from MP4 and MOV video files
