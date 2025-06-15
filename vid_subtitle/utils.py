@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 
 
 class VidSubtitleError(Exception):
@@ -78,7 +79,7 @@ def validate_file_exists(file_path: str) -> bool:
 
 def get_openai_api_key() -> str:
     """
-    Get OpenAI API key from environment variables.
+    Get OpenAI API key from environment variables or .env file.
     
     Returns:
         str: The OpenAI API key.
@@ -86,10 +87,11 @@ def get_openai_api_key() -> str:
     Raises:
         OpenAIKeyNotFoundError: If the API key is not found.
     """
+    load_dotenv()  # Load environment variables from .env file
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         raise OpenAIKeyNotFoundError(
-            "OpenAI API key not found. Please set the OPENAI_API_KEY environment variable."
+            "OpenAI API key not found. Please set the OPENAI_API_KEY in your .env file or environment variables."
         )
     return api_key
 
