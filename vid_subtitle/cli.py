@@ -1,0 +1,115 @@
+"""
+Command-line interface for vid-subtitle library.
+"""
+
+import argparse
+import sys
+
+from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info
+from .utils import VidSubtitleError
+
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="Add subtitles to videos using OpenAI Whisper API and FFmpeg",
+        prog="vid-subtitle"
+    )
+    
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Add subtitles command
+    add_parser = subparsers.add_parser('add', help='Add subtitles to a video')
+    add_parser.add_argument('input_video', help='Input video file (MP4 or MOV)')
+    add_parser.add_argument('output_video', help='Output video file with subtitles')
+    add_parser.add_argument('-l', '--language', default='en', 
+                           help='Language code for transcription (default: en)')
+    add_parser.add_argument('-v', '--verbose', action='store_true',
+                           help='Enable verbose output')
+    
+    # Extract subtitles only command
+    extract_parser = subparsers.add_parser('extract', help='Extract subtitles only (no video output)')
+    extract_parser.add_argument('input_video', help='Input video file (MP4 or MOV)')
+    extract_parser.add_argument('-o', '--output', help='Output SRT file (optional)')
+    extract_parser.add_argument('-l', '--language', default='en',
+                               help='Language code for transcription (default: en)')
+    extract_parser.add_argument('-v', '--verbose', action='store_true',
+                               help='Enable verbose output')
+    
+    # Info command
+    info_parser = subparsers.add_parser('info', help='Show library information')
+    
+    # Languages command
+    lang_parser = subparsers.add_parser('languages', help='List supported languages')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return 1
+    
+    try:
+        if args.command == 'add':
+            print(f"Adding subtitles to {args.input_video}...")
+            result = add_subtitles(
+                input_video=args.input_video,
+                output_video=args.output_video,
+                language=args.language,
+                verbose=args.verbose
+            )
+            
+            print(f"\n✓ Success!")
+            print(f"Output video: {result['output_video']}")
+            print(f"SRT file: {result['srt_file']}")
+            print(f"Estimated cost: ${result['transcription_cost']:.4f}")
+            
+        elif args.command == 'extract':
+            print(f"Extracting subtitles from {args.input_video}...")
+            result = extract_subtitles_only(
+                input_video=args.input_video,
+                output_srt=args.output,
+                language=args.language,
+                verbose=args.verbose
+            )
+            
+            print(f"\n✓ Success!")
+            print(f"SRT file: {result['srt_file']}")
+            print(f"Subtitle count: {result['subtitle_stats']['subtitle_count']}")
+            print(f"Estimated cost: ${result['transcription_cost']:.4f}")
+            
+        elif args.command == 'info':
+            info = get_library_info()
+            print("vid-subtitle Library Information:")
+            print(f"Version: {info['version']}")
+            print(f"Supported video formats: {', '.join(info['supported_video_formats'])}")
+            print(f"Supported subtitle formats: {', '.join(info['supported_subtitle_formats'])}")
+            print(f"Supported languages: {info['supported_languages']}")
+            print(f"Requires FFmpeg: {info['requires_ffmpeg']}")
+            print(f"Requires OpenAI API key: {info['requires_openai_api_key']}")
+            
+        elif args.command == 'languages':
+            languages = get_supported_languages()
+            print(f"Supported languages ({len(languages)} total):")
+            
+            # Print in columns
+            cols = 6
+            for i in range(0, len(languages), cols):
+                row = languages[i:i+cols]
+                print("  " + "  ".join(f"{lang:>3}" for lang in row))
+        
+        return 0
+        
+    except VidSubtitleError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
