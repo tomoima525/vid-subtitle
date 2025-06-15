@@ -29,7 +29,7 @@ def extract_audio(video_path: str, output_audio_path: Optional[str] = None) -> s
         AudioExtractionError: If audio extraction fails.
     """
     if output_audio_path is None:
-        output_audio_path = create_temp_file(suffix='.wav')
+        output_audio_path = create_temp_file(suffix='.ogg')
     
     # FFmpeg command to extract audio
     # -i: input file
@@ -42,8 +42,9 @@ def extract_audio(video_path: str, output_audio_path: Optional[str] = None) -> s
         'ffmpeg',
         '-i', video_path,
         '-vn',  # No video
-        '-acodec', 'pcm_s16le',  # PCM 16-bit LE
-        '-ar', '16000',  # 16kHz sample rate
+        '-acodec', 'libopus',
+        '-b:a', '12k',
+        '-application', 'voip',
         '-ac', '1',  # Mono
         '-y',  # Overwrite output
         output_audio_path
