@@ -58,7 +58,7 @@ def transcribe_audio(audio_path: str, language: str = "en") -> Dict[str, Any]:
                 file=audio_file,
                 language=language,
                 response_format="verbose_json",  # Get detailed response with timestamps
-                timestamp_granularities=["segment"]  # Get segment-level timestamps
+                timestamp_granularities=["segment"],  # Get segment-level timestamps
             )
         
         # Convert the response to a dictionary format
