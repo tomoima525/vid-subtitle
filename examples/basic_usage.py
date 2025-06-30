@@ -3,7 +3,7 @@ Basic usage examples for vid-subtitle library.
 """
 
 import os
-from vid_subtitle import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info
+from vid_subtitle import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info, add_subtitle_file
 
 
 def main():
@@ -107,5 +107,68 @@ def main():
         print("- Valid video file")
 
 
+def example_add_subtitles():
+    """Example: Add subtitles to a video using transcription."""
+    print("=== Adding subtitles with transcription ===")
+    
+    try:
+        result = add_subtitles(
+            input_video="input.mp4",
+            output_video="output_with_subtitles.mp4",
+            language="en",
+            verbose=True
+        )
+        
+        print(f"✓ Success! Output video: {result['output_video']}")
+        print(f"SRT file: {result['srt_file']}")
+        print(f"Cost: ${result['transcription_cost']:.4f}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def example_extract_subtitles():
+    """Example: Extract subtitles only (no video output)."""
+    print("\n=== Extracting subtitles only ===")
+    
+    try:
+        result = extract_subtitles_only(
+            input_video="input.mp4",
+            output_srt="extracted_subtitles.srt",
+            language="en",
+            verbose=True
+        )
+        
+        print(f"✓ Success! SRT file: {result['srt_file']}")
+        print(f"Subtitle count: {result['subtitle_stats']['subtitle_count']}")
+        print(f"Cost: ${result['transcription_cost']:.4f}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def example_embed_subtitles():
+    """Example: Embed existing subtitles into a video."""
+    print("\n=== Embedding existing subtitles ===")
+    
+    try:
+        result = add_subtitle_file(
+            input_video="input.mp4",
+            subtitle_file="existing_subtitles.srt",
+            output_video="output_with_embedded_subtitles.mp4",
+            verbose=True
+        )
+        
+        print(f"✓ Success! Output video: {result['output_video']}")
+        print(f"Subtitle file used: {result['subtitle_file']}")
+        print(f"Processing time: {result['processing_time']:.1f} seconds")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+
 if __name__ == "__main__":
-    main()
+    # Run examples
+    example_add_subtitles()
+    example_extract_subtitles()
+    example_embed_subtitles()

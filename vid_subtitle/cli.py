@@ -5,7 +5,7 @@ Command-line interface for vid-subtitle library.
 import argparse
 import sys
 
-from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info
+from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info, add_subtitle_file
 from .utils import VidSubtitleError
 
 
@@ -35,6 +35,14 @@ def main():
                                help='Language code for transcription (default: en)')
     extract_parser.add_argument('-v', '--verbose', action='store_true',
                                help='Enable verbose output')
+    
+    # Embed subtitles command
+    embed_parser = subparsers.add_parser('embed', help='Embed existing subtitles into video')
+    embed_parser.add_argument('input_video', help='Input video file (MP4 or MOV)')
+    embed_parser.add_argument('subtitle_file', help='Input SRT subtitle file')
+    embed_parser.add_argument('output_video', help='Output video file with subtitles')
+    embed_parser.add_argument('-v', '--verbose', action='store_true',
+                             help='Enable verbose output')
     
     # Info command
     info_parser = subparsers.add_parser('info', help='Show library information')
@@ -77,6 +85,20 @@ def main():
             print(f"SRT file: {result['srt_file']}")
             print(f"Subtitle count: {result['subtitle_stats']['subtitle_count']}")
             print(f"Estimated cost: ${result['transcription_cost']:.4f}")
+            
+        elif args.command == 'embed':
+            print(f"Embedding subtitles into {args.input_video}...")
+            result = add_subtitle_file(
+                input_video=args.input_video,
+                subtitle_file=args.subtitle_file,
+                output_video=args.output_video,
+                verbose=args.verbose
+            )
+            
+            print(f"\n✓ Success!")
+            print(f"Output video: {result['output_video']}")
+            print(f"Subtitle file used: {result['subtitle_file']}")
+            print(f"Estimated processing time: {result['processing_time']:.1f} seconds")
             
         elif args.command == 'info':
             info = get_library_info()

@@ -6,7 +6,8 @@ from .core import (
     add_subtitles,
     extract_subtitles_only,
     get_supported_languages,
-    get_library_info
+    get_library_info,
+    add_subtitle_file
 )
 
 __version__ = "0.1.0"
@@ -17,5 +18,6 @@ __all__ = [
     "add_subtitles",
     "extract_subtitles_only", 
     "get_supported_languages",
-    "get_library_info"
+    "get_library_info",
+    "add_subtitle_file"
 ]

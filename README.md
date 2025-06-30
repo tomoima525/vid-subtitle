@@ -49,13 +49,20 @@ pip install vid-subtitle
 ### Basic Usage
 
 ```python
-from vid_subtitle import add_subtitles
+from vid_subtitle import add_subtitles, add_subtitle_file
 
-# Add subtitles to a video
+# Add subtitles to a video using transcription
 add_subtitles(
     input_video="input.mp4",
     output_video="output_with_subtitles.mp4",
     language="en"  # Optional, defaults to English
+)
+
+# Add existing subtitles to a video (no transcription needed)
+add_subtitle_file(
+    input_video="input.mp4",
+    subtitle_file="existing_subtitles.srt",
+    output_video="output_with_embedded_subtitles.mp4"
 )
 ```
 
@@ -68,7 +75,20 @@ This will:
 ### CLI Usage
 
 ```bash
-vid-subtitle add -l en -v  input.mp4 output.mp4 
+# Add subtitles with transcription
+vid-subtitle add -l en -v input.mp4 output.mp4
+
+# Embed existing subtitles into video
+vid-subtitle embed input.mp4 subtitles.srt output.mp4
+
+# Extract subtitles only (no video output)
+vid-subtitle extract input.mp4 -o subtitles.srt
+
+# Show supported languages
+vid-subtitle languages
+
+# Show library information
+vid-subtitle info
 ```
 
 ### Supported Languages

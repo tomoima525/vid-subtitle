@@ -255,3 +255,91 @@ def get_library_info() -> dict:
         'requires_ffmpeg': True,
         'requires_openai_api_key': True
     }
+
+
+def add_subtitle_file(input_video: str, subtitle_file: str, output_video: str, 
+                     verbose: bool = False) -> dict:
+    """
+    Add existing subtitles to a video using FFmpeg.
+    
+    This function embeds an existing SRT subtitle file into a video without
+    performing any transcription. Useful when you already have subtitles.
+    
+    Args:
+        input_video (str): Path to the input video file (MP4 or MOV).
+        subtitle_file (str): Path to the SRT subtitle file.
+        output_video (str): Path for the output video file with embedded subtitles.
+        verbose (bool, optional): Whether to print progress information. Defaults to False.
+        
+    Returns:
+        dict: Dictionary containing information about the process:
+            - output_video: Path to the output video file
+            - subtitle_file: Path to the input subtitle file
+            - processing_time: Estimated processing time
+            - video_info: Information about the input video
+            
+    Raises:
+        VidSubtitleError: If any step in the process fails.
+        
+    Example:
+        >>> from vid_subtitle import add_subtitle_file
+        >>> result = add_subtitle_file("input.mp4", "subtitles.srt", "output.mp4")
+        >>> print(f"Video with subtitles: {result['output_video']}")
+    """
+    try:
+        # Step 1: Validate inputs
+        if verbose:
+            print("Validating inputs...")
+        
+        # Validate video file exists and is readable
+        if not os.path.exists(input_video):
+            raise VidSubtitleError(f"Input video file not found: {input_video}")
+        
+        # Validate subtitle file exists
+        if not os.path.exists(subtitle_file):
+            raise VidSubtitleError(f"Subtitle file not found: {subtitle_file}")
+        
+        # Validate subtitle file has .srt extension
+        if not subtitle_file.lower().endswith('.srt'):
+            raise VidSubtitleError("Subtitle file must have .srt extension")
+        
+        # Validate output path
+        output_dir = os.path.dirname(output_video)
+        if output_dir and not os.path.exists(output_dir):
+            raise VidSubtitleError(f"Output directory does not exist: {output_dir}")
+        
+        # Step 2: Get video information
+        if verbose:
+            print("Getting video information...")
+        video_info = get_video_info(input_video)
+        if verbose:
+            print(f"Video duration: {video_info['duration']:.1f} seconds")
+            print(f"Video resolution: {video_info['resolution']}")
+        
+        # Step 3: Embed subtitles into video
+        if verbose:
+            print(f"Embedding subtitles into video: {output_video}")
+        create_video_with_burned_subtitles(input_video, subtitle_file, output_video)
+        
+        # Step 4: Estimate processing time
+        processing_time = estimate_processing_time(video_info['duration'])
+        
+        if verbose:
+            print("Process completed successfully!")
+            print(f"Output video: {output_video}")
+            print(f"Subtitle file used: {subtitle_file}")
+        
+        # Return result information
+        return {
+            'output_video': output_video,
+            'subtitle_file': subtitle_file,
+            'processing_time': processing_time,
+            'video_info': video_info
+        }
+        
+    except Exception as e:
+        # Re-raise the exception
+        if isinstance(e, VidSubtitleError):
+            raise
+        else:
+            raise VidSubtitleError(f"Unexpected error in add_subtitle_file: {str(e)}") from e
