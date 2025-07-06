@@ -2,11 +2,7 @@
 
 A Python library to add subtitles to videos using FFmpeg and OpenAI Whisper API.
 
-
-
 https://github.com/user-attachments/assets/7c2d0a6a-7d75-4837-b141-097104a0cb5e
-
-
 
 ## Features
 
@@ -31,6 +27,7 @@ pip install vid-subtitle
 ## Setup
 
 1. Install FFmpeg on your system:
+
    - **macOS**: `brew install ffmpeg`
    - **Ubuntu/Debian**: `sudo apt update && sudo apt install ffmpeg`
    - **Windows**: Download from [FFmpeg official website](https://ffmpeg.org/download.html)
@@ -67,6 +64,7 @@ add_subtitle_file(
 ```
 
 This will:
+
 1. Extract audio from the input video
 2. Transcribe the audio using OpenAI Whisper API
 3. Generate an SRT subtitle file
@@ -83,6 +81,9 @@ vid-subtitle embed input.mp4 subtitles.srt output.mp4
 
 # Extract subtitles only (no video output)
 vid-subtitle extract input.mp4 -o subtitles.srt
+
+# Refine subtitles
+vid-subtitle refine subtitles.srt refined_subtitles.srt -i "Refine the subtitles to be more accurate."
 
 # Show supported languages
 vid-subtitle languages
@@ -115,12 +116,14 @@ The library supports all languages supported by OpenAI Whisper API. Use ISO 639-
 ## Output Files
 
 The library generates two outputs:
+
 1. **Video file with embedded subtitles**: `{output_video}`
 2. **Separate SRT subtitle file**: `{input_video_name}.srt`
 
 ## Error Handling
 
 The library includes comprehensive error handling for:
+
 - Missing FFmpeg installation
 - Invalid video formats
 - Missing OpenAI API key
