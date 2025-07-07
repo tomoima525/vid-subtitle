@@ -5,7 +5,7 @@ Command-line interface for vid-subtitle library.
 import argparse
 import sys
 
-from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info, add_subtitle_file
+from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info, add_subtitle_file, refine_subtitles
 from .utils import VidSubtitleError
 
 
@@ -45,10 +45,18 @@ def main():
                              help='Enable verbose output')
     
     # Info command
-    info_parser = subparsers.add_parser('info', help='Show library information')
+    subparsers.add_parser('info', help='Show library information')
     
     # Languages command
-    lang_parser = subparsers.add_parser('languages', help='List supported languages')
+    subparsers.add_parser('languages', help='List supported languages')
+
+    # Refine subtitles command
+    refine_parser = subparsers.add_parser('refine', help='Refine subtitles')
+    refine_parser.add_argument('subtitle_file', help='Input SRT subtitle file')
+    refine_parser.add_argument('output_subtitle_file', help='Output SRT subtitle file with refined subtitles')
+    refine_parser.add_argument('-i', '--instruction', help="Instruction for refining subtitles")
+    refine_parser.add_argument('-v', '--verbose', action='store_true',
+                              help='Enable verbose output')
     
     # Parse arguments
     args = parser.parse_args()
@@ -120,6 +128,17 @@ def main():
                 row = languages[i:i+cols]
                 print("  " + "  ".join(f"{lang:>3}" for lang in row))
         
+        elif args.command == 'refine':
+            print(f"Refining subtitles in {args.subtitle_file}...")
+            result = refine_subtitles(
+                subtitle_file_path=args.subtitle_file,
+                output_subtitle_file_path=args.output_subtitle_file,
+                instruction=args.instruction,
+                verbose=args.verbose
+            )
+            
+            print(f"\n✓ Success!")
+            print(f"Output subtitle file: {result['output_subtitle_file']}")
         return 0
         
     except VidSubtitleError as e:

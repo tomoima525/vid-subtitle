@@ -5,6 +5,8 @@ Core module for vid-subtitle library.
 import os
 from typing import Optional
 
+from vid_subtitle.refiner import refine_subtitle_text, save_subtitle_text
+
 from .utils import (
     validate_inputs, 
     get_output_srt_path, 
@@ -343,3 +345,33 @@ def add_subtitle_file(input_video: str, subtitle_file: str, output_video: str,
             raise
         else:
             raise VidSubtitleError(f"Unexpected error in add_subtitle_file: {str(e)}") from e
+
+
+def refine_subtitles(subtitle_file_path: str, output_subtitle_file_path: str, instruction: str, verbose: bool = False) -> dict:
+    """
+    Refine subtitles using OpenAI API.
+    
+    This function refines the subtitles in an SRT file using the OpenAI API.
+    
+    Args:
+        subtitle_file (str): Path to the input SRT subtitle file.
+        output_subtitle_file (str): Path for the output SRT file with refined subtitles.
+        instruction (str): Instruction for refining subtitles.
+    """
+    try:
+        
+        # Step 2: Refine subtitles using OpenAI API
+        refined_subtitle_text = refine_subtitle_text(subtitle_file_path, instruction)
+        
+        # Step 4: Save refined subtitles
+        save_subtitle_text(refined_subtitle_text, output_subtitle_file_path)
+        
+        # Step 5: Return result information
+        return {
+            'output_subtitle_file': output_subtitle_file_path,
+        }
+        
+    except Exception as e:
+        # Re-raise the exception
+        if isinstance(e, VidSubtitleError):
+            raise
