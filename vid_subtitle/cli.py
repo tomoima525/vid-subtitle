@@ -60,7 +60,9 @@ def main():
                               help='Enable verbose output')
 
     # Agent command
-    subparsers.add_parser('agent', help='Use Agent to generate subtitles')
+    agent_parser = subparsers.add_parser('agent', help='Use Agent to generate subtitles')
+    agent_parser.add_argument('-d', '--debug', action='store_true',
+                              help='Enable debug mode')
     
     # Parse arguments
     args = parser.parse_args()
@@ -146,7 +148,7 @@ def main():
 
         elif args.command == 'agent':
             print("Using Agent to generate subtitles...")
-            result = generate_subtitles_with_agent();
+            result = generate_subtitles_with_agent(debug=args.debug);
         return 0
         
     except VidSubtitleError as e:
