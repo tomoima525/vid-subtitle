@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from .core import add_subtitles, extract_subtitles_only, get_supported_languages, get_library_info, add_subtitle_file, refine_subtitles
+from .agent import generate_subtitles_with_agent
 from .utils import VidSubtitleError
 
 
@@ -57,6 +58,11 @@ def main():
     refine_parser.add_argument('-i', '--instruction', help="Instruction for refining subtitles")
     refine_parser.add_argument('-v', '--verbose', action='store_true',
                               help='Enable verbose output')
+
+    # Agent command
+    agent_parser = subparsers.add_parser('agent', help='Use Agent to generate subtitles')
+    agent_parser.add_argument('-d', '--debug', action='store_true',
+                              help='Enable debug mode')
     
     # Parse arguments
     args = parser.parse_args()
@@ -139,6 +145,10 @@ def main():
             
             print(f"\n✓ Success!")
             print(f"Output subtitle file: {result['output_subtitle_file']}")
+
+        elif args.command == 'agent':
+            print("Using Agent to generate subtitles...")
+            result = generate_subtitles_with_agent(debug=args.debug);
         return 0
         
     except VidSubtitleError as e:
