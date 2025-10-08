@@ -65,6 +65,7 @@ logs/
 ehthumbs.db
 Thumbs.db
 
+data/
 *.mp4
 *.srt
 *.vtt

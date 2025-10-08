@@ -1,0 +1,78 @@
+{
+  "server": {
+    "name": "file-server",
+    "version": "1.0.0",
+    "description": "MCP server for secure local file access"
+  },
+  "transport": {
+    "type": "stdio",
+    "sse": {
+      "host": "localhost",
+      "port": 3000,
+      "cors_enabled": true,
+      "allowed_origins": ["http://localhost:3000"]
+    }
+  },
+  "roots": [
+    {
+      "uri": "file:///home/user/workspace",
+      "name": "Development Workspace",
+      "description": "Main development directory"
+    },
+    {
+      "uri": "file:///home/user/documents",
+      "name": "Documents",
+      "description": "User documents folder"
+    },
+    {
+      "uri": "file:///tmp/mcp-temp",
+      "name": "Temporary Files",
+      "description": "Temporary file storage"
+    }
+  ],
+  "security": {
+    "max_file_size": 10485760,
+    "max_directory_depth": 10,
+    "allowed_extensions": ["*"],
+    "denied_extensions": [
+      ".key",
+      ".pem",
+      ".p12",
+      ".pfx",
+      ".env",
+      ".secret"
+    ],
+    "enable_content_search": true,
+    "max_search_results": 100,
+    "max_concurrent_operations": 5
+  },
+  "features": {
+    "read_files": true,
+    "write_files": true,
+    "create_directories": true,
+    "delete_files": false,
+    "move_files": false,
+    "copy_files": false,
+    "read_binary_files": true,
+    "symbolic_links": false,
+    "hidden_files": false
+  },
+  "logging": {
+    "level": "INFO",
+    "security_events": true,
+    "file_operations": true,
+    "log_file": "/var/log/mcp-file-server.log"
+  },
+  "performance": {
+    "cache_file_info": true,
+    "cache_duration_seconds": 300,
+    "async_operations": true,
+    "compression_enabled": false,
+    "compression_threshold": 1024
+  },
+  "notifications": {
+    "file_changes": false,
+    "directory_changes": false,
+    "watch_patterns": ["*.py", "*.js", "*.json", "*.md"]
+  }
+}
