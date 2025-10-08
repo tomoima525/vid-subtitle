@@ -12,7 +12,7 @@ import os
 import pathlib
 import signal
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 import mimetypes
 import base64
 import glob
@@ -22,6 +22,27 @@ import mcp.types as types
 from mcp.server.models import InitializationOptions
 from mcp.server import NotificationOptions, Server
 from mcp.server.stdio import stdio_server
+
+# Add vid_subtitle to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
+
+# Import video subtitle functionality
+try:
+    from vid_subtitle.core import (
+        add_subtitles,
+        extract_subtitles_only,
+        add_subtitle_file,
+        refine_subtitles,
+        get_supported_languages,
+        get_library_info
+    )
+    from vid_subtitle.utils import VidSubtitleError
+    VIDEO_SUBTITLE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Video subtitle functionality not available: {e}")
+    VIDEO_SUBTITLE_AVAILABLE = False
 
 
 @dataclass
@@ -49,6 +70,21 @@ class FileServer:
         self.max_directory_depth = 10
         self.denied_extensions = {".key", ".pem", ".p12", ".pfx", ".env", ".secret"}
         self.transport_config = {"type": "stdio"}  # Default transport config
+        
+        # Video processing configuration
+        self.video_config = {
+            "max_video_size": 1073741824,  # 1GB default
+            "supported_video_formats": [".mp4", ".mov"],
+            "supported_subtitle_formats": [".srt"],
+            "temp_directory": "/tmp/vid-subtitle",
+            "cleanup_temp_files": True,
+            "ffmpeg_timeout": 3600
+        }
+        self.openai_config = {
+            "model": "whisper-1",
+            "api_key_env_var": "OPENAI_API_KEY",
+            "max_retries": 3
+        }
 
         # Register handlers
         self._register_handlers()
@@ -108,7 +144,7 @@ class FileServer:
         @self.server.list_tools()
         async def handle_list_tools() -> list[types.Tool]:
             """List available file operation tools."""
-            return [
+            tools = [
                 types.Tool(
                     name="read_file",
                     description="Read the contents of a file",
@@ -206,6 +242,132 @@ class FileServer:
                     },
                 ),
             ]
+            
+            # Add video subtitle tools if available
+            if VIDEO_SUBTITLE_AVAILABLE:
+                tools.extend([
+                    types.Tool(
+                        name="add_subtitles",
+                        description="Add subtitles to a video using OpenAI Whisper API and FFmpeg",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "input_video": {
+                                    "type": "string",
+                                    "description": "Path to input video file (MP4 or MOV)",
+                                },
+                                "output_video": {
+                                    "type": "string",
+                                    "description": "Path for output video with embedded subtitles",
+                                },
+                                "language": {
+                                    "type": "string",
+                                    "description": "Language code for transcription",
+                                    "default": "en",
+                                },
+                                "verbose": {
+                                    "type": "boolean",
+                                    "description": "Show detailed progress information",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["input_video", "output_video"],
+                        },
+                    ),
+                    types.Tool(
+                        name="extract_subtitles_only",
+                        description="Extract subtitles from video without creating new video file",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "input_video": {
+                                    "type": "string",
+                                    "description": "Path to input video file",
+                                },
+                                "output_srt": {
+                                    "type": "string",
+                                    "description": "Optional path for output SRT file",
+                                },
+                                "language": {
+                                    "type": "string",
+                                    "description": "Language code for transcription",
+                                    "default": "en",
+                                },
+                                "verbose": {
+                                    "type": "boolean",
+                                    "description": "Show progress information",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["input_video"],
+                        },
+                    ),
+                    types.Tool(
+                        name="add_subtitle_file",
+                        description="Add existing SRT subtitle file to video",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "input_video": {
+                                    "type": "string",
+                                    "description": "Path to input video file",
+                                },
+                                "subtitle_file": {
+                                    "type": "string",
+                                    "description": "Path to SRT subtitle file",
+                                },
+                                "output_video": {
+                                    "type": "string",
+                                    "description": "Path for output video with embedded subtitles",
+                                },
+                                "verbose": {
+                                    "type": "boolean",
+                                    "description": "Show progress information",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["input_video", "subtitle_file", "output_video"],
+                        },
+                    ),
+                    types.Tool(
+                        name="refine_subtitles",
+                        description="Refine existing subtitles using OpenAI API",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "subtitle_file": {
+                                    "type": "string",
+                                    "description": "Path to input SRT subtitle file",
+                                },
+                                "output_subtitle_file": {
+                                    "type": "string",
+                                    "description": "Path for refined output SRT file",
+                                },
+                                "instruction": {
+                                    "type": "string",
+                                    "description": "Instructions for refining subtitles",
+                                },
+                                "verbose": {
+                                    "type": "boolean",
+                                    "description": "Show progress information",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["subtitle_file", "output_subtitle_file", "instruction"],
+                        },
+                    ),
+                    types.Tool(
+                        name="get_supported_languages",
+                        description="Get list of supported transcription languages",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {},
+                            "required": [],
+                        },
+                    ),
+                ])
+            
+            return tools
 
         @self.server.call_tool()
         async def handle_call_tool(
@@ -223,6 +385,17 @@ class FileServer:
                 return await self._tool_search_files(arguments)
             elif name == "get_file_info":
                 return await self._tool_get_file_info(arguments)
+            # Video subtitle tools
+            elif name == "add_subtitles" and VIDEO_SUBTITLE_AVAILABLE:
+                return await self._tool_add_subtitles(arguments)
+            elif name == "extract_subtitles_only" and VIDEO_SUBTITLE_AVAILABLE:
+                return await self._tool_extract_subtitles_only(arguments)
+            elif name == "add_subtitle_file" and VIDEO_SUBTITLE_AVAILABLE:
+                return await self._tool_add_subtitle_file(arguments)
+            elif name == "refine_subtitles" and VIDEO_SUBTITLE_AVAILABLE:
+                return await self._tool_refine_subtitles(arguments)
+            elif name == "get_supported_languages" and VIDEO_SUBTITLE_AVAILABLE:
+                return await self._tool_get_supported_languages(arguments)
             else:
                 raise ValueError(f"Unknown tool: {name}")
 
@@ -508,6 +681,114 @@ class FileServer:
             ]
         except Exception as e:
             raise RuntimeError(f"Failed to get file info: {e}")
+    
+    # Video subtitle tool implementations
+    async def _tool_add_subtitles(self, arguments: dict) -> list[types.TextContent]:
+        """Add subtitles tool implementation."""
+        try:
+            input_video = arguments["input_video"]
+            output_video = arguments["output_video"]
+            language = arguments.get("language", "en")
+            verbose = arguments.get("verbose", False)
+            
+            # Validate paths
+            validated_input = self._validate_path(input_video)
+            validated_output = self._validate_path(output_video)
+            
+            # Call vid_subtitle function
+            result = add_subtitles(validated_input, validated_output, language, verbose)
+            
+            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        except VidSubtitleError as e:
+            raise RuntimeError(f"Video subtitle error: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to add subtitles: {e}")
+    
+    async def _tool_extract_subtitles_only(self, arguments: dict) -> list[types.TextContent]:
+        """Extract subtitles only tool implementation."""
+        try:
+            input_video = arguments["input_video"]
+            output_srt = arguments.get("output_srt")
+            language = arguments.get("language", "en")
+            verbose = arguments.get("verbose", False)
+            
+            # Validate paths
+            validated_input = self._validate_path(input_video)
+            validated_output = None
+            if output_srt:
+                validated_output = self._validate_path(output_srt)
+            
+            # Call vid_subtitle function
+            result = extract_subtitles_only(validated_input, validated_output, language, verbose)
+            
+            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        except VidSubtitleError as e:
+            raise RuntimeError(f"Video subtitle error: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to extract subtitles: {e}")
+    
+    async def _tool_add_subtitle_file(self, arguments: dict) -> list[types.TextContent]:
+        """Add subtitle file tool implementation."""
+        try:
+            input_video = arguments["input_video"]
+            subtitle_file = arguments["subtitle_file"]
+            output_video = arguments["output_video"]
+            verbose = arguments.get("verbose", False)
+            
+            # Validate paths
+            validated_input = self._validate_path(input_video)
+            validated_subtitle = self._validate_path(subtitle_file)
+            validated_output = self._validate_path(output_video)
+            
+            # Call vid_subtitle function
+            result = add_subtitle_file(validated_input, validated_subtitle, validated_output, verbose)
+            
+            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        except VidSubtitleError as e:
+            raise RuntimeError(f"Video subtitle error: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to add subtitle file: {e}")
+    
+    async def _tool_refine_subtitles(self, arguments: dict) -> list[types.TextContent]:
+        """Refine subtitles tool implementation."""
+        try:
+            subtitle_file = arguments["subtitle_file"]
+            output_subtitle_file = arguments["output_subtitle_file"]
+            instruction = arguments["instruction"]
+            verbose = arguments.get("verbose", False)
+            
+            # Validate paths
+            validated_input = self._validate_path(subtitle_file)
+            validated_output = self._validate_path(output_subtitle_file)
+            
+            # Call vid_subtitle function
+            result = refine_subtitles(validated_input, validated_output, instruction, verbose)
+            
+            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        except VidSubtitleError as e:
+            raise RuntimeError(f"Video subtitle error: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to refine subtitles: {e}")
+    
+    async def _tool_get_supported_languages(self, arguments: dict) -> list[types.TextContent]:
+        """Get supported languages tool implementation."""
+        try:
+            # Call vid_subtitle function
+            languages = get_supported_languages()
+            
+            result = {
+                "supported_languages": languages,
+                "total_count": len(languages)
+            }
+            
+            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        
+        except Exception as e:
+            raise RuntimeError(f"Failed to get supported languages: {e}")
 
     def set_roots(self, roots: List[Dict[str, str]]):
         """Set root directories from client."""
@@ -544,6 +825,14 @@ class FileServer:
 
             # Store transport config for later use
             self.transport_config = config.get("transport", {"type": "stdio"})
+            
+            # Set video processing configuration
+            video_config = config.get("video_processing", {})
+            self.video_config.update(video_config)
+            
+            # Set OpenAI configuration
+            openai_config = config.get("openai", {})
+            self.openai_config.update(openai_config)
 
     async def run(self, transport_type="stdio", host="localhost", port=3000):
         """Run the server with specified transport."""

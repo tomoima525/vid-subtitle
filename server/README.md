@@ -1,16 +1,54 @@
-# MCP File Server
+# MCP Video Subtitle Server
 
-A Model Context Protocol (MCP) server that provides secure local file access through resources and tools, with root-based security boundaries.
+A Model Context Protocol (MCP) server that provides video subtitle processing and secure local file access through resources and tools, with root-based security boundaries.
+
+## Features
+
+### Video Subtitle Processing
+- **Complete Subtitle Workflow**: Extract audio, transcribe using OpenAI Whisper, generate SRT files, and embed subtitles
+- **Extract Subtitles Only**: Generate SRT files without creating new video files  
+- **Add Existing Subtitles**: Embed existing SRT files into videos
+- **Refine Subtitles**: Improve subtitle quality using OpenAI API
+- **Multi-language Support**: Support for 90+ languages via OpenAI Whisper
+- **Secure Processing**: All operations respect root directory boundaries
+
+### File Access
+- **Secure File Access**: Root-based directory boundaries prevent unauthorized access
+- **File Operations**: Read, write, list, search files and directories
+- **Resource Exposure**: Files available as MCP resources with `file://` URIs
+- **Binary Support**: Automatic handling of binary files with base64 encoding
 
 ## Installation
 
-1. Install dependencies:
+### Prerequisites
 
-```bash
-pip install -r requirements.txt
-```
+1. **FFmpeg**: Required for video processing
+   ```bash
+   # macOS
+   brew install ffmpeg
+   
+   # Ubuntu/Debian  
+   sudo apt update && sudo apt install ffmpeg
+   
+   # Windows
+   # Download from https://ffmpeg.org/download.html
+   ```
 
-2. Configure the server by editing `config.json`(see below section) to set your allowed root directories.
+2. **OpenAI API Key**: Required for transcription and subtitle refinement
+   - Get your API key from [OpenAI](https://platform.openai.com/api-keys)
+   - Set the environment variable: `export OPENAI_API_KEY=your_api_key_here`
+
+### Server Installation
+
+1. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Configure the server by editing `config.json` (see Configuration section below) to set your:
+   - Allowed root directories
+   - Video processing settings
+   - OpenAI configuration
 
 ## Usage
 
@@ -34,7 +72,7 @@ python server.py config.json
 
 ## Claude Desktop Integration
 
-To use this MCP file server with Claude Desktop app, you need to configure it in Claude Desktop's settings.
+To use this MCP video subtitle server with Claude Desktop app, you need to configure it in Claude Desktop's settings.
 
 ### Step 1: Locate Configuration File
 
@@ -103,17 +141,28 @@ Once connected, you should see:
 
 ### Step 5: Using the Server
 
-You can now ask Claude to interact with your files:
+You can now ask Claude to interact with your files and process videos:
 
+#### File Operations
 ```
 "List files in the project workspace"
-"Read the package.json file"
+"Read the package.json file" 
 "Search for Python files containing 'async'"
 "Write a new README to the docs folder"
 ```
 
+#### Video Subtitle Operations
+```
+"Add English subtitles to presentation.mp4 and save as presentation_with_subs.mp4"
+"Extract subtitles from lecture.mov and save as lecture.srt"
+"Add the existing subtitles.srt file to movie.mp4 and create movie_final.mp4"
+"Refine the subtitles in rough_subs.srt to improve grammar and save as polished_subs.srt"
+"What languages are supported for video transcription?"
+```
+
 ### Troubleshooting
 
+#### Server Connection Issues
 If the server doesn't connect:
 
 1. **Check paths**: Ensure Python executable and script paths are correct and absolute
@@ -121,6 +170,16 @@ If the server doesn't connect:
 3. **Verify config**: Make sure your `config.json` has valid root directories
 4. **Check logs**: Enable Claude Desktop's developer console for error messages
 5. **Test manually**: Try running `python run_server.py` to test the server independently
+
+#### Video Subtitle Issues
+If video processing fails:
+
+1. **FFmpeg**: Ensure FFmpeg is installed and available in PATH (`ffmpeg -version`)
+2. **OpenAI API Key**: Verify your `OPENAI_API_KEY` environment variable is set
+3. **File formats**: Only MP4 and MOV video files are supported
+4. **File paths**: Ensure video files are within configured root directories
+5. **File size**: Check video file size doesn't exceed configured limits
+6. **Permissions**: Verify read/write access to input/output directories
 
 ### Transport Details
 
@@ -160,11 +219,19 @@ Example configuration:
 
 ## Available Tools
 
+### File Operations
 - **read_file**: Read file contents
 - **write_file**: Write content to files
 - **list_directory**: List directory contents
 - **search_files**: Search by filename or content
 - **get_file_info**: Get file metadata
+
+### Video Subtitle Tools
+- **add_subtitles**: Complete video subtitle workflow (extract audio → transcribe → generate SRT → embed subtitles)
+- **extract_subtitles_only**: Extract subtitles from video without creating new video file
+- **add_subtitle_file**: Embed existing SRT subtitle file into video
+- **refine_subtitles**: Improve existing subtitles using OpenAI API
+- **get_supported_languages**: Get list of supported transcription languages (90+ languages)
 
 ## Available Resources
 

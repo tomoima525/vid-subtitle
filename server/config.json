@@ -1,8 +1,21 @@
 {
   "server": {
-    "name": "file-server",
+    "name": "vid-subtitle",
     "version": "1.0.0",
-    "description": "MCP server for secure local file access"
+    "description": "MCP server for video subtitle processing and file access"
+  },
+  "video_processing": {
+    "max_video_size": 1073741824,
+    "supported_video_formats": [".mp4", ".mov"],
+    "supported_subtitle_formats": [".srt"],
+    "temp_directory": "/tmp/vid-subtitle",
+    "cleanup_temp_files": true,
+    "ffmpeg_timeout": 3600
+  },
+  "openai": {
+    "model": "whisper-1",
+    "api_key_env_var": "OPENAI_API_KEY",
+    "max_retries": 3
   },
   "transport": {
     "type": "stdio",
