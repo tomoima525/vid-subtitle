@@ -1,0 +1,61 @@
+{
+  "server": {
+    "name": "file-server",
+    "version": "1.0.0",
+    "description": "MCP server for secure local file access"
+  },
+  "transport": {
+    "type": "stdio",
+    "sse": {
+      "host": "localhost",
+      "port": 3000,
+      "cors_enabled": true
+    }
+  },
+  "roots": [
+    {
+      "uri": "file:///Users/tomoima525/workspace/imai/vid-subtitle",
+      "name": "Project Workspace",
+      "description": "Main project directory"
+    }
+  ],
+  "security": {
+    "max_file_size": 10485760,
+    "max_directory_depth": 10,
+    "allowed_extensions": ["*"],
+    "denied_extensions": [
+      ".key",
+      ".pem",
+      ".p12",
+      ".pfx",
+      ".env",
+      ".secret"
+    ],
+    "enable_content_search": true,
+    "max_search_results": 100,
+    "max_concurrent_operations": 5
+  },
+  "features": {
+    "read_files": true,
+    "write_files": true,
+    "create_directories": true,
+    "delete_files": false,
+    "move_files": false,
+    "copy_files": false,
+    "read_binary_files": true,
+    "symbolic_links": false,
+    "hidden_files": false
+  },
+  "logging": {
+    "level": "INFO",
+    "security_events": true,
+    "file_operations": true
+  },
+  "performance": {
+    "cache_file_info": true,
+    "cache_duration_seconds": 300,
+    "async_operations": true,
+    "compression_enabled": false,
+    "compression_threshold": 1024
+  }
+}
