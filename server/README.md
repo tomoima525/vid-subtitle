@@ -5,14 +5,16 @@ A Model Context Protocol (MCP) server that provides video subtitle processing an
 ## Features
 
 ### Video Subtitle Processing
+
 - **Complete Subtitle Workflow**: Extract audio, transcribe using OpenAI Whisper, generate SRT files, and embed subtitles
-- **Extract Subtitles Only**: Generate SRT files without creating new video files  
+- **Extract Subtitles Only**: Generate SRT files without creating new video files
 - **Add Existing Subtitles**: Embed existing SRT files into videos
 - **Refine Subtitles**: Improve subtitle quality using OpenAI API
 - **Multi-language Support**: Support for 90+ languages via OpenAI Whisper
 - **Secure Processing**: All operations respect root directory boundaries
 
 ### File Access
+
 - **Secure File Access**: Root-based directory boundaries prevent unauthorized access
 - **File Operations**: Read, write, list, search files and directories
 - **Resource Exposure**: Files available as MCP resources with `file://` URIs
@@ -23,13 +25,14 @@ A Model Context Protocol (MCP) server that provides video subtitle processing an
 ### Prerequisites
 
 1. **FFmpeg**: Required for video processing
+
    ```bash
    # macOS
    brew install ffmpeg
-   
-   # Ubuntu/Debian  
+
+   # Ubuntu/Debian
    sudo apt update && sudo apt install ffmpeg
-   
+
    # Windows
    # Download from https://ffmpeg.org/download.html
    ```
@@ -41,14 +44,20 @@ A Model Context Protocol (MCP) server that provides video subtitle processing an
 ### Server Installation
 
 1. Install Python dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 2. Configure the server by editing `config.json` (see Configuration section below) to set your:
+
    - Allowed root directories
    - Video processing settings
    - OpenAI configuration
+
+   ```bash
+   cp config.example.json config.json
+   ```
 
 ## Usage
 
@@ -144,14 +153,16 @@ Once connected, you should see:
 You can now ask Claude to interact with your files and process videos:
 
 #### File Operations
+
 ```
 "List files in the project workspace"
-"Read the package.json file" 
+"Read the package.json file"
 "Search for Python files containing 'async'"
 "Write a new README to the docs folder"
 ```
 
 #### Video Subtitle Operations
+
 ```
 "Add English subtitles to presentation.mp4 and save as presentation_with_subs.mp4"
 "Extract subtitles from lecture.mov and save as lecture.srt"
@@ -163,6 +174,7 @@ You can now ask Claude to interact with your files and process videos:
 ### Troubleshooting
 
 #### Server Connection Issues
+
 If the server doesn't connect:
 
 1. **Check paths**: Ensure Python executable and script paths are correct and absolute
@@ -172,6 +184,7 @@ If the server doesn't connect:
 5. **Test manually**: Try running `python run_server.py` to test the server independently
 
 #### Video Subtitle Issues
+
 If video processing fails:
 
 1. **FFmpeg**: Ensure FFmpeg is installed and available in PATH (`ffmpeg -version`)
@@ -220,6 +233,7 @@ Example configuration:
 ## Available Tools
 
 ### File Operations
+
 - **read_file**: Read file contents
 - **write_file**: Write content to files
 - **list_directory**: List directory contents
@@ -227,6 +241,7 @@ Example configuration:
 - **get_file_info**: Get file metadata
 
 ### Video Subtitle Tools
+
 - **add_subtitles**: Complete video subtitle workflow (extract audio → transcribe → generate SRT → embed subtitles)
 - **extract_subtitles_only**: Extract subtitles from video without creating new video file
 - **add_subtitle_file**: Embed existing SRT subtitle file into video
