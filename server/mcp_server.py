@@ -11,6 +11,7 @@ import json
 import os
 import pathlib
 import signal
+import platform
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import mimetypes
@@ -241,6 +242,20 @@ class FileServer:
                         "required": ["path"],
                     },
                 ),
+                types.Tool(
+                    name="open_file",
+                    description="Open a file or directory with the appropriate application (macOS: uses 'open' command for directories/videos, preferred text editors for .srt files)",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path to the file or directory to open",
+                            }
+                        },
+                        "required": ["path"],
+                    },
+                ),
             ]
             
             # Add video subtitle tools if available
@@ -385,6 +400,8 @@ class FileServer:
                 return await self._tool_search_files(arguments)
             elif name == "get_file_info":
                 return await self._tool_get_file_info(arguments)
+            elif name == "open_file":
+                return await self._tool_open_file(arguments)
             # Video subtitle tools
             elif name == "add_subtitles" and VIDEO_SUBTITLE_AVAILABLE:
                 return await self._tool_add_subtitles(arguments)
@@ -681,6 +698,79 @@ class FileServer:
             ]
         except Exception as e:
             raise RuntimeError(f"Failed to get file info: {e}")
+    
+    async def _tool_open_file(self, arguments: dict) -> list[types.TextContent]:
+        """Open file tool implementation."""
+        path = arguments["path"]
+        validated_path = self._validate_path(path)
+        
+        try:
+            import subprocess
+            
+            # Check if path exists
+            if not os.path.exists(validated_path):
+                raise FileNotFoundError(f"File or directory not found: {validated_path}")
+            
+            current_platform = platform.system().lower()
+            
+            if current_platform == "darwin":  # macOS
+                # For directories and video files, use the 'open' command
+                if os.path.isdir(validated_path):
+                    subprocess.run(["open", validated_path], check=True)
+                    return [types.TextContent(type="text", text=f"Directory opened: {validated_path}")]
+                
+                # Check file extension
+                _, ext = os.path.splitext(validated_path.lower())
+                
+                if ext in [".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm"]:
+                    # Video files - use default video player
+                    subprocess.run(["open", validated_path], check=True)
+                    return [types.TextContent(type="text", text=f"Video file opened with default player: {validated_path}")]
+                
+                elif ext in [".srt", ".vtt", ".ass", ".ssa", ".sub"]:
+                    # Subtitle files - try preferred text editors
+                    editors = [
+                        {"cmd": ["code", validated_path], "name": "VS Code"},
+                        {"cmd": ["vim", validated_path], "name": "Vim"},
+                        {"cmd": ["nano", validated_path], "name": "Nano"},
+                        {"cmd": ["open", "-t", validated_path], "name": "Default Text Editor"}
+                    ]
+                    
+                    for editor in editors:
+                        try:
+                            subprocess.run(editor["cmd"], check=True)
+                            return [types.TextContent(type="text", text=f"Subtitle file opened with {editor['name']}: {validated_path}")]
+                        except (subprocess.CalledProcessError, FileNotFoundError):
+                            continue
+                    
+                    # Fallback to default opener
+                    subprocess.run(["open", validated_path], check=True)
+                    return [types.TextContent(type="text", text=f"Subtitle file opened with default application: {validated_path}")]
+                
+                else:
+                    # Other files - use default opener
+                    subprocess.run(["open", validated_path], check=True)
+                    return [types.TextContent(type="text", text=f"File opened with default application: {validated_path}")]
+            
+            elif current_platform == "linux":
+                # Linux - use xdg-open
+                subprocess.run(["xdg-open", validated_path], check=True)
+                return [types.TextContent(type="text", text=f"File opened with default application: {validated_path}")]
+            
+            elif current_platform == "windows":
+                # Windows - use os.startfile
+                os.startfile(validated_path)
+                return [types.TextContent(type="text", text=f"File opened with default application: {validated_path}")]
+            
+            else:
+                return [types.TextContent(type="text", text=f"Unsupported platform: {current_platform}")]
+                
+        except FileNotFoundError as e:
+            raise FileNotFoundError(str(e))
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to open file: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to open file: {e}")
     
     # Video subtitle tool implementations
     async def _tool_add_subtitles(self, arguments: dict) -> list[types.TextContent]:

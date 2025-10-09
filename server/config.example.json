@@ -27,7 +27,7 @@
   },
   "roots": [
     {
-      "uri": "file:///Users/tomoima525/workspace/imai/vid-subtitle",
+      "uri": "file:///Users/your_repo_/vid-subtitle",
       "name": "Project Workspace",
       "description": "Main project directory"
     }
@@ -36,14 +36,7 @@
     "max_file_size": 10485760,
     "max_directory_depth": 10,
     "allowed_extensions": ["*"],
-    "denied_extensions": [
-      ".key",
-      ".pem",
-      ".p12",
-      ".pfx",
-      ".env",
-      ".secret"
-    ],
+    "denied_extensions": [".key", ".pem", ".p12", ".pfx", ".env", ".secret"],
     "enable_content_search": true,
     "max_search_results": 100,
     "max_concurrent_operations": 5
