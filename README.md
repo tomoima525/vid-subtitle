@@ -1,5 +1,10 @@
 **Now supports Model Context Protocol (MCP) for video subtitle processing and secure local file access!!! See [server/README.md](server/README.md) for more details.**
 
+
+https://github.com/user-attachments/assets/105a2fe6-9122-4f33-a4a0-b8ed3f64cabc
+
+
+
 # vid-subtitle
 
 A Python library to add subtitles to videos using FFmpeg and OpenAI Whisper API.
