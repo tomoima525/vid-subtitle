@@ -1,0 +1,407 @@
+manifest:
+  version: "0.1.2"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: tomoima525/vid-subtitle
+    source: https://github.com/tomoima525/vid-subtitle
+    branch: main
+    commit: "77274004"
+    scope: [vid_subtitle/agent.py, vid_subtitle/cli.py, vid_subtitle/core.py]
+  issued:
+    by: A2AS.org
+    at: '2026-01-26T16:11:25Z'
+  signatures:
+    digest: sha256:fjQw9tdPcaT4ydcOFEo9gVQIGnP7pBI2zQdSavLdq2k
+    key: ed25519:7lDk5DbBq9hGnqn9KwLWdLzNsrL76q3er3BHMAUUMHM
+    sig: ed25519:RSk7CYKw4mhaambWk6hRPZgCzSJy0omQHYXTTvrluHaxQSwlAuZRfM8tiEcQXXEHlosETripqwXkHwbcIwl7DQ
+
+agents:
+  add_subtitle_agent:
+    type: instance
+    models: [gpt-4.1]
+    tools: [add_subtitle]
+    params:
+      name: Add Subtitle Agent
+      handoff_description: You are a helpful assistant that adds subtitles to a video file.
+      instructions: ['{RECOMMENDED_PROMPT_PREFIX}', First ask user which video file to add subtitles to. Ask user if they
+          have a preference for the language of the subtitles. Then call `add_subtitle` tool to add subtitles to the video.]
+  agent:
+    type: instance
+    models: [gpt-4.1]
+    params:
+      name: Subtitle Generator Agent
+      handoff_description: You are a triage agent that can delegate a task to the appropriate agent.
+      handoffs: [add_subtitle_agent, extract_subtitle_agent, refine_subtitle_agent]
+      instructions: ['{RECOMMENDED_PROMPT_PREFIX}', 'First ask user what they would like to do: add subtitles to a video,
+          extract subtitles from video, or refine subtitles. Then you determine the appropriate Agent to do the task.']
+  extract_subtitle_agent:
+    type: instance
+    models: [gpt-4.1]
+    tools: [extract_subtitle]
+    params:
+      name: Extract Subtitle Agent
+      handoff_description: You are a helpful assistant that extracts subtitles from a video file.
+      instructions: ['{RECOMMENDED_PROMPT_PREFIX}', First ask user which video file to extract subtitles from. Ask user if
+          they have a preference for the language of the subtitles. Then call `extract_subtitle` tool to extract subtitles
+          from the video.]
+  refine_subtitle_agent:
+    type: instance
+    models: [gpt-4.1]
+    tools: [refine_subtitle]
+    params:
+      name: Refine Subtitle Agent
+      handoff_description: You are a helpful assistant that refines subtitles.
+      instructions: ['{RECOMMENDED_PROMPT_PREFIX}', First ask user which subtitle file to refine. Ask user for the instruction
+          to refine the subtitles. Then call `refine_subtitle` tool to refine the subtitles.]
+
+models:
+  gpt-4.1:
+    type: default
+    agents: [add_subtitle_agent, extract_subtitle_agent, refine_subtitle_agent, agent]
+
+tools:
+  add_subtitle:
+    type: decorator
+    agents: [add_subtitle_agent]
+  extract_subtitle:
+    type: decorator
+    agents: [extract_subtitle_agent]
+  refine_subtitle:
+    type: decorator
+    agents: [refine_subtitle_agent]
+
+teams:
+  agent:
+    type: handoff
+    agents: [agent, add_subtitle_agent, extract_subtitle_agent, refine_subtitle_agent]
+
+imports:
+  __version__: __version__
+  add_subtitle_file: core.add_subtitle_file
+  add_subtitles: core.add_subtitles
+  Agent: agents.Agent
+  Any: typing.Any
+  argparse: argparse
+  asyncio: asyncio
+  BaseModel: pydantic.BaseModel
+  cleanup_temp_file: utils.cleanup_temp_file
+  create_temp_file: utils.create_temp_file
+  create_video_with_burned_subtitles: video_processor.create_video_with_burned_subtitles
+  Dict: typing.Dict
+  estimate_processing_time: video_processor.estimate_processing_time
+  estimate_transcription_cost: transcriber.estimate_transcription_cost
+  extract_audio: audio_extractor.extract_audio
+  extract_subtitles_only: core.extract_subtitles_only
+  function_tool: agents.function_tool
+  generate_srt: subtitle_generator.generate_srt
+  generate_subtitles_with_agent: agent.generate_subtitles_with_agent
+  get_audio_duration: audio_extractor.get_audio_duration
+  get_library_info: core.get_library_info
+  get_openai_api_key: utils.get_openai_api_key
+  get_output_srt_path: utils.get_output_srt_path
+  get_subtitle_stats: subtitle_generator.get_subtitle_stats
+  get_supported_languages: core.get_supported_languages
+  get_video_info: video_processor.get_video_info
+  HandoffOutputItem: agents.HandoffOutputItem
+  ItemHelpers: agents.ItemHelpers
+  List: typing.List
+  load_dotenv: dotenv.load_dotenv
+  MessageOutputItem: agents.MessageOutputItem
+  OpenAI: openai.OpenAI
+  Optional: typing.Optional
+  os: os
+  Path: pathlib.Path
+  re: re
+  RECOMMENDED_PROMPT_PREFIX: agents.extensions.handoff_prompt.RECOMMENDED_PROMPT_PREFIX
+  refine_subtitle_text: vid_subtitle.refiner.refine_subtitle_text
+  refine_subtitles: core.refine_subtitles
+  RunContextWrapper: agents.RunContextWrapper
+  Runner: agents.Runner
+  save_subtitle_text: vid_subtitle.refiner.save_subtitle_text
+  subprocess: subprocess
+  sys: sys
+  tempfile: tempfile
+  ToolCallItem: agents.ToolCallItem
+  ToolCallOutputItem: agents.ToolCallOutputItem
+  trace: agents.trace
+  transcribe_audio: transcriber.transcribe_audio
+  TResponseInputItem: agents.TResponseInputItem
+  uuid: uuid
+  validate_file_exists: utils.validate_file_exists
+  validate_inputs: utils.validate_inputs
+  VidSubtitleError: utils.VidSubtitleError
+
+functions:
+  add_subtitle:
+    type: tool
+    module: vid_subtitle.agent
+    args: [context, video_file, language]
+    params:
+      returns: str
+  add_subtitle_file:
+    type: sync
+    module: vid_subtitle.core
+    args: [input_video, subtitle_file, output_video, verbose]
+    params:
+      returns: dict
+  add_subtitles:
+    type: sync
+    module: vid_subtitle.core
+    args: [input_video, output_video, language, verbose]
+    params:
+      returns: dict
+  check_ffmpeg_installed:
+    type: sync
+    module: vid_subtitle.utils
+    params:
+      returns: bool
+  clean_text:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [text]
+    params:
+      returns: str
+  cleanup_temp_file:
+    type: sync
+    module: vid_subtitle.utils
+    args: [file_path]
+    params:
+      returns: None
+  create_temp_file:
+    type: sync
+    module: vid_subtitle.utils
+    args: [suffix]
+    params:
+      returns: str
+  create_video_with_burned_subtitles:
+    type: sync
+    module: vid_subtitle.video_processor
+    args: [video_path, srt_path, output_path, subtitle_style]
+    params:
+      returns: str
+  estimate_processing_time:
+    type: sync
+    module: vid_subtitle.video_processor
+    args: [video_duration, burn_subtitles]
+    params:
+      returns: float
+  estimate_transcription_cost:
+    type: sync
+    module: vid_subtitle.transcriber
+    args: [audio_duration_seconds]
+    params:
+      returns: float
+  extract_audio:
+    type: sync
+    module: vid_subtitle.audio_extractor
+    args: [video_path, output_audio_path]
+    params:
+      returns: str
+  extract_subtitle:
+    type: tool
+    module: vid_subtitle.agent
+    args: [context, video_file, language]
+    params:
+      returns: str
+  extract_subtitles_only:
+    type: sync
+    module: vid_subtitle.core
+    args: [input_video, output_srt, language, verbose]
+    params:
+      returns: dict
+  format_timestamp:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [seconds]
+    params:
+      returns: str
+  generate_srt:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [transcription, output_path]
+    params:
+      returns: str
+  generate_subtitles_with_agent:
+    type: sync
+    module: vid_subtitle.agent
+    args: [debug]
+  get_audio_duration:
+    type: sync
+    module: vid_subtitle.audio_extractor
+    args: [audio_path]
+    params:
+      returns: float
+  get_library_info:
+    type: sync
+    module: vid_subtitle.core
+    params:
+      returns: dict
+  get_openai_api_key:
+    type: sync
+    module: vid_subtitle.utils
+    params:
+      returns: str
+  get_output_srt_path:
+    type: sync
+    module: vid_subtitle.utils
+    args: [input_video_path]
+    params:
+      returns: str
+  get_subtitle_stats:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [srt_path]
+    params:
+      returns: Dict
+  get_supported_languages:
+    type: sync
+    module: vid_subtitle.core
+    params:
+      returns: list
+  get_video_info:
+    type: sync
+    module: vid_subtitle.video_processor
+    args: [video_path]
+    params:
+      returns: dict
+  main:
+    type: sync
+    module: vid_subtitle.cli
+  refine_subtitle:
+    type: tool
+    module: vid_subtitle.agent
+    args: [context, subtitle_file, instruction]
+    params:
+      returns: str
+  refine_subtitle_text:
+    type: sync
+    module: vid_subtitle.refiner
+    args: [subtitle_file_path, instruction]
+    params:
+      returns: str
+  refine_subtitles:
+    type: sync
+    module: vid_subtitle.core
+    args: [subtitle_file_path, output_subtitle_file_path, instruction, verbose]
+    params:
+      returns: dict
+  save_subtitle_text:
+    type: sync
+    module: vid_subtitle.refiner
+    args: [refined_subtitle_text, output_subtitle_file_path]
+    params:
+      returns: None
+  split_long_segments:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [segments, max_duration]
+    params:
+      returns: List[Dict]
+  transcribe_audio:
+    type: sync
+    module: vid_subtitle.transcriber
+    args: [audio_path, language]
+    params:
+      returns: Dict
+  validate_file_exists:
+    type: sync
+    module: vid_subtitle.utils
+    args: [file_path]
+    params:
+      returns: bool
+  validate_inputs:
+    type: sync
+    module: vid_subtitle.utils
+    args: [input_video, output_video, language]
+    params:
+      returns: None
+  validate_language_code:
+    type: sync
+    module: vid_subtitle.transcriber
+    args: [language]
+    params:
+      returns: bool
+  validate_srt_file:
+    type: sync
+    module: vid_subtitle.subtitle_generator
+    args: [srt_path]
+    params:
+      returns: bool
+  validate_video_file:
+    type: sync
+    module: vid_subtitle.video_processor
+    args: [video_path]
+    params:
+      returns: bool
+  validate_video_format:
+    type: sync
+    module: vid_subtitle.utils
+    args: [video_path]
+    params:
+      returns: bool
+
+variables:
+  OPENAI_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [vid_subtitle.utils]
+
+files:
+  audio_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.exists, open]
+  file_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.isfile, os.path.exists, os.unlink]
+  input_video_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  output_dir:
+    type: variable
+    actions: [write, read]
+    params:
+      caller: [output_dir.mkdir, os.path.exists]
+  output_path:
+    type: variable
+    actions: [write]
+    params:
+      caller: [open]
+      alias: [f]
+  output_subtitle_file_path:
+    type: variable
+    actions: [write]
+    params:
+      caller: [open]
+      alias: [file]
+  srt_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [open]
+      alias: [f]
+  subtitle_file_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [open]
+  video_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+
+processes:
+  ffmpeg:
+    type: shell
+    actions: [exec]
+    args: [[-version]]
+    params:
+      caller: [subprocess.run]
+      shell: ["False"]
